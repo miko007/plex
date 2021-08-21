@@ -4,15 +4,29 @@ import util from "util";
 
 class Token {
 	constructor(type, value, line = new TokenPosition(), subType = null) {
-		this.type      = type;
-		this.value     = value;
-		this.position  = line;
+		this.type       = type;
+		this.value      = value;
+		this.position   = line;
+		this.precedence = Token.Precedence(type);
 		if (subType)
 			this.subType = subType;
 	}
 
-	[util.inspect.custom](depth, opts) {
+	[util.inspect.custom]() {
 		return {...this, type : Token.Type.Lookup(this.type)};
+	}
+
+	static Precedence(type) {
+		switch(type) {
+			case Token.Type.PLUS:
+			case Token.Type.MINUS:
+				return 5;
+			case Token.Type.ASTERISK:
+			case Token.Type.SLASH:
+				return 10;
+			default:
+				return -Infinity;
+		}
 	}
 }
 Token.Type = Object.freeze({
@@ -42,7 +56,7 @@ class TokenPosition {
 	}
 
 	[util.inspect.custom](depth, opts) {
-		return `Line ${this.line}[${this.start}, ${this.start + this.length}]`;
+		return `[${this.line}, ${this.start}]`;
 	}
 }
 
@@ -111,6 +125,14 @@ class Lexer {
 				break;
 			case '=':
 				type = Token.Type.EQUALS;
+				this.pointer++;
+				break;
+			case '(':
+				type = Token.Type.LPAREN;
+				this.pointer++;
+				break;
+			case ')':
+				type = Token.Type.RPAREN;
 				this.pointer++;
 				break;
 			case '0': case '1': case '2': case '3': case '4':
@@ -196,7 +218,8 @@ Lexer.Keywords = Object.freeze([
 	"IF",
 	"THEN",
 	"ELSE",
-	"ENDIF"
+	"ENDIF",
+	"CONST"
 ]);
 
 export {Token, TokenPosition};
